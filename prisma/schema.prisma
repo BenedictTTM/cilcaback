@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int         @id @default(autoincrement())
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  email                String      @unique
+  passwordHash         String
+  username             String      @unique
+  phone                String?     @unique
+  profilePic           String?
+  firstName            String?
+  lastName             String?
+
+  role                 Role        @default(USER)
+  isDeleted            Boolean     @default(false)
+  rating               Float       @default(0.0)
+  totalRatings         Int         @default(0)
+  passwordResetExpires DateTime?
+  passwordResetToken   String?
+  refreshToken         String?
+  refreshTokenExp      DateTime?
+  storeName            String?
+  receivedMessages     Message[]   @relation("ReceivedMessages")
+  sentMessages         Message[]   @relation("SentMessages")
+  payments             Payment[]
+  products             Product[]
+
+  reviews              Review[]    @relation("ReviewerReviews")
+
+  @@index([createdAt])
+
+  @@index([role])
+}
+
+model Product {
+  id               Int            @id @default(autoincrement())
+  title            String
+  description      String?
+  imageUrl         String[]
+  category         String
+  originalPrice    Float
+  discountedPrice  Float
+  stock            Int
+  isActive         Boolean        @default(true)
+  isSold           Boolean        @default(false)
+  condition        String
+  tags             String[]
+  views            Int            @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  averageRating    Float          @default(0.0)
+  totalReviews     Int            @default(0)
+  lastRatingUpdate DateTime?
+  userId           Int?
+  delivery         Delivery?
+  user             User?          @relation(fields: [userId], references: [id])
+  images           ProductImage[]
+  reviews          Review[]
+
+  // Performance indexes for high-traffic queries
+  @@index([userId])
+  @@index([averageRating])
+  @@index([isActive])
+  @@index([isSold])
+  @@index([stock])
+  @@index([discountedPrice])
+  @@index([isActive, isSold])
+  @@index([isActive, createdAt(sort: Desc)])
+  @@index([category, isActive, isSold])
+  @@index([category, createdAt(sort: Desc)])
+  @@index([category, discountedPrice])
+  @@index([category, views(sort: Desc)])
+  @@index([category, averageRating(sort: Desc)])
+  @@index([userId, isActive])
+}
+
+model ProductImage {
+  id        Int     @id @default(autoincrement())
+  url       String
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id                Int         @id @default(autoincrement())
+  amount            Float
+  currency          String      @default("GHS")
+  status            String      @default("PENDING")
+  transactionId     String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  paymentType       String      @default("PREMIUM")
+  userId            Int
+  metadata          Json?
+  providerPaymentId String?     @unique
+  user              User        @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  sentAt     DateTime @default(now())
+  senderId   Int
+  receiverId Int
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  reviewerId Int
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id])
+  reviewer   User     @relation("ReviewerReviews", fields: [reviewerId], references: [id])
+}
+
+model Delivery {
+  id        Int     @id @default(autoincrement())
+  method    String
+  location  String?
+  fee       Float?
+  productId Int     @unique
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+
+enum Role {
+  USER
+  ADMIN
+  
+}
