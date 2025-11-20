@@ -90,8 +90,9 @@ export class CloudinaryService {
               height: 400,
               crop: 'fill', // Auto-crop to square
               gravity: 'face', // Focus on face if detected
-              quality: 'auto', // Auto-optimize quality
-              fetch_format: 'auto', // Auto-select best format (WebP, etc.)
+              quality: "auto:best",     // ✔ highest auto quality
+              fetch_format: "auto",     // ✔ auto choose best format (webp, avif)
+              dpr: "auto",              // ✔ retina support
             }
           ],
           allowed_formats: ['jpg', 'png', 'jpeg', 'webp'], // Restrict to image formats
