@@ -16,11 +16,6 @@ export class PaymentService {
 
   constructor(private readonly prisma: PrismaService, private readonly paystackService: PaystackService) {}
 
-  /**
-   * Create a payment record (marks pending).
-   * If meta.provider === 'paystack' this will also attempt to initialize a Paystack transaction
-   * and persist the provider reference on the payment record.
-   */
   async createPayment(
     userId: number,
     amount: number,
@@ -136,16 +131,7 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Handle incoming webhook / provider callback.
-   *
-   * - Normalizes common provider shapes (e.g., Paystack: { event, data: { reference, status } })
-   * - Finds the DB record by providerPaymentId/reference
-   * - Updates payment status
-   * - Credits user slots exactly once when transitioning to a success state
-   *
-   * Returns { ok: boolean, data?: any }
-   */
+
   async handleWebhook(payload: any, opts?: { provider?: string; signature?: string }) {
     try {
       try {
@@ -179,26 +165,35 @@ export class PaymentService {
       const wasSuccess = String(existing.status ?? '').toLowerCase().includes('success');
       const nowSuccess = newStatusNormalized.includes('success') || newStatusNormalized === 'successful' || newStatusNormalized === 'completed';
 
-      // Transaction to update payment and credit slots (if needed) atomically
+      // Transaction to update payment and order payment status atomically
       const updated = await this.prisma.$transaction(async (tx) => {
         const metadata = (existing.metadata as any) ?? {};
-        const alreadyCredited = Boolean(metadata.slotsCredited);
 
         const newMetadata: any = { ...metadata, webhookHandledAt: new Date().toISOString(), lastWebhookStatus: status };
 
-        // If we transition from non-success -> success and slotsGranted > 0 and not already credited, attempt to credit them.
-        // Note: slotsGranting fields were removed from schema; crediting is skipped and logged to avoid runtime DB errors.
-        const slotsGranted = (existing as any).slotsGranted ?? 0;
-        if (!wasSuccess && nowSuccess && slotsGranted > 0 && !alreadyCredited) {
-          this.logger.warn(`Schema no longer manages slot credits. Skipping automatic credit for userId=${existing.userId} slots=${slotsGranted} paymentId=${existing.id}`);
-          newMetadata.slotsCreditAttempted = true;
-        }
-
+        // Update payment record
         const updatedPayment = await tx.payment.update({
           where: { id: existing.id },
           data: { status, metadata: newMetadata } as any,
         });
 
+        // Update order payment status if this payment is linked to an order
+        if (existing.orderId && nowSuccess) {
+          await (tx as any).order.update({
+            where: { id: existing.orderId },
+            data: { paymentStatus: 'PAID' },
+          });
+          this.logger.log(`Order ${existing.orderId} payment status updated to PAID`);
+        } else if (existing.orderId && !nowSuccess) {
+          // Update to appropriate status for failed/abandoned payments
+          const orderPaymentStatus = newStatusNormalized === 'failed' ? 'FAILED' : 'UNPAID';
+          await (tx as any).order.update({
+            where: { id: existing.orderId },
+            data: { paymentStatus: orderPaymentStatus },
+          });
+          this.logger.log(`Order ${existing.orderId} payment status updated to ${orderPaymentStatus}`);
+        }
+        
         return updatedPayment;
       });
 

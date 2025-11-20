@@ -507,7 +507,6 @@ export class GetProductsService {
       condition: true,
       tags: true,
       views: true,
-      locationLng: true,
       createdAt: true,
       updatedAt: true,
       isActive: true,

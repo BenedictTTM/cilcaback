@@ -64,6 +64,8 @@ model Product {
   user             User?          @relation(fields: [userId], references: [id])
   images           ProductImage[]
   reviews          Review[]
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
 
   // Performance indexes for high-traffic queries
   @@index([userId])
@@ -99,12 +101,15 @@ model Payment {
   updatedAt         DateTime    @updatedAt
   paymentType       String      @default("PREMIUM")
   userId            Int
+  orderId           Int?        // Optional link to an order; set when paying for product orders
   metadata          Json?
   providerPaymentId String?     @unique
   user              User        @relation(fields: [userId], references: [id])
+  order             Order?      @relation(fields: [orderId], references: [id])
 
   @@index([userId])
   @@index([status])
+  @@index([orderId])
 }
 
 model Message {
@@ -137,6 +142,65 @@ model Delivery {
   product   Product @relation(fields: [productId], references: [id])
 }
 
+model Cart {
+  id        Int        @id @default(autoincrement())
+  userId    Int        @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     CartItem[]
+
+  @@index([userId])
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  productId Int
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  buyerId        Int
+  whatsappNumber String
+  callNumber     String
+  location       String?
+  buyerMessage   String?
+  status         String      @default("PENDING")
+  currency       String      @default("GHS")
+  totalAmount    Float
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          OrderItem[]
+  payments       Payment[]
+  paymentStatus String @default("UNPAID")
+
+  @@index([buyerId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+}
+
+model OrderItem {
+  id          Int     @id @default(autoincrement())
+  orderId     Int
+  productId   Int
+  quantity    Int
+  unitPrice   Float
+  productName String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
 
 enum Role {
   USER

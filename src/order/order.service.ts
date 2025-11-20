@@ -1,12 +1,14 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { OrderStatus } from './dto/update-order-status.dto';
+import { PaymentService } from '../payment/payment.service';
 
 @Injectable()
 export class OrderService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly paymentService: PaymentService) {}
   async createOrder(buyerId: number, dto: CreateOrderDto) {
-    const { productId, quantity, whatsappNumber, callNumber, hall, message } = dto;
+    const { productId, quantity, whatsappNumber, callNumber, location, message } = dto;
 
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
@@ -29,6 +31,7 @@ export class OrderService {
     if (product.userId === buyerId) {
       throw new ForbiddenException('You cannot order your own product');
     }
+
 
     if (product.isSold || product.stock <= 0) {
       throw new BadRequestException('Product is sold out');
@@ -53,10 +56,9 @@ export class OrderService {
       (this.prisma as any).order.create({
         data: {
           buyerId,
-          sellerId: product.userId,
           whatsappNumber,
           callNumber,
-          hall,
+          location,
           buyerMessage: message,
           status: 'PENDING',
           currency: 'GHS',
@@ -71,7 +73,9 @@ export class OrderService {
           },
         },
         include: {
-          items: true,
+          items: {
+            include: { product: { select: { id: true, userId: true, title: true } } },
+          },
         },
       }),
     ]);
@@ -97,13 +101,14 @@ export class OrderService {
       where: { id: orderId },
       include: {
         items: {
-          include: { product: { select: { id: true, title: true, imageUrl: true } } },
+          include: { product: { select: { id: true, title: true, imageUrl: true, userId: true } } },
         },
       },
     });
 
     if (!order) throw new NotFoundException('Order not found');
-    if (order.buyerId !== userId && order.sellerId !== userId) {
+    const isSeller = order.items.some((it: any) => it.product?.userId === userId);
+    if (order.buyerId !== userId && !isSeller) {
       throw new ForbiddenException('You do not have access to this order');
     }
     return order;
@@ -111,13 +116,113 @@ export class OrderService {
 
   async getSellerOrders(userId: number) {
     return (this.prisma as any).order.findMany({
-      where: { sellerId: userId },
+      where: { items: { some: { product: { userId } } } },
       orderBy: { createdAt: 'desc' },
+      include: {
+        items: {
+          include: { product: { select: { id: true, title: true, imageUrl: true, userId: true } } },
+        },
+      },
+    });
+  }
+
+  /** Admin-only: hard delete order and restore product stocks */
+  async deleteOrderAdmin(orderId: number) {
+    const order = await (this.prisma as any).order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    const tx: any[] = [];
+    for (const item of order.items) {
+      tx.push(
+        this.prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: { increment: item.quantity },
+            isSold: false,
+          },
+        }) as any,
+      );
+    }
+    tx.push((this.prisma as any).order.delete({ where: { id: orderId } }));
+    await this.prisma.$transaction(tx as any);
+    return { success: true };
+  }
+
+  /** Admin-only: update order status with simple transition rules */
+  async updateOrderStatusAdmin(orderId: number, status: OrderStatus) {
+    const allowed = new Set(Object.values(OrderStatus));
+    if (!allowed.has(status)) {
+      throw new BadRequestException('Invalid order status');
+    }
+
+    const order = await (this.prisma as any).order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+
+    // Basic transition control
+    const current: OrderStatus = order.status as OrderStatus;
+    const rank: Record<OrderStatus, number> = {
+      [OrderStatus.PENDING]: 0,
+      [OrderStatus.CONFIRMED]: 1,
+      [OrderStatus.SHIPPED]: 2,
+      [OrderStatus.DELIVERED]: 3,
+      [OrderStatus.CANCELLED]: 99,
+    } as const;
+
+    if (status !== OrderStatus.CANCELLED && rank[status] < rank[current]) {
+      throw new BadRequestException('Cannot move status backwards');
+    }
+
+    const updated = await (this.prisma as any).order.update({
+      where: { id: orderId },
+      data: { status },
       include: {
         items: {
           include: { product: { select: { id: true, title: true, imageUrl: true } } },
         },
       },
     });
+    return updated;
+  }
+
+  /** Buyer initiates payment for an existing PENDING order. Returns payment + provider authorization if applicable. */
+  async initiatePaymentForOrder(userId: number, orderId: number) {
+    const order = await (this.prisma as any).order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.buyerId !== userId) throw new ForbiddenException('Not your order');
+    if (order.status !== 'PENDING') {
+      throw new BadRequestException('Order not in payable state');
+    }
+
+    const totalAmount = order.totalAmount;
+    // Check for existing payment
+    const existingPayment = await this.prisma.payment.findFirst({ where: { orderId: order.id } });
+    if (existingPayment && existingPayment.status !== 'pending' && existingPayment.status !== 'PENDING') {
+      // Payment already processed (success, failed, abandoned, etc.)
+      return { reused: true, orderId: order.id, payment: existingPayment };
+    }
+
+    // Delete existing pending payment to create fresh one with new authorization URL
+    if (existingPayment) {
+      await this.prisma.payment.delete({ where: { id: existingPayment.id } });
+    }
+
+    // Create provider metadata referencing order
+    const meta = { orderId: order.id, provider: 'paystack' };
+    const result = await this.paymentService.createPayment(userId, totalAmount, order.currency, meta as any);
+    if (!result.success) {
+      throw new InternalServerErrorException(result.error || 'Payment initialization failed');
+    }
+    // Link payment to order
+    await this.prisma.payment.update({
+      where: { id: result.data.id },
+      data: { orderId: order.id } as any,
+    });
+    return { orderId: order.id, payment: result.data, authorization: result.authorization };
   }
 }

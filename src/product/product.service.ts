@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { CrudService } from "./Service/crud.products.service"; 
 import { GetProductsService } from "./Service/getproducts.service";
 import { ProductDto } from "./dto/product.dto"; // Adjust path as necessary
+import { UpdateProductDto } from "./dto/update-product.dto";
 
 @Injectable()
 export class ProductService {
@@ -15,7 +16,7 @@ export class ProductService {
     return this.crudService.createProduct(productData , files);
   }
 
-    async updateProduct(productId: number, productData: ProductDto , userId:number) {
+    async updateProduct(productId: number, productData: UpdateProductDto , userId:number) {
         return this.crudService.updateProduct(productId, productData , userId);
     }
 

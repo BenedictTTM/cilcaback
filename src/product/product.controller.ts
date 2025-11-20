@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseIntPipe , Request , UseGuards, ParseFloatPipe, DefaultValuePipe } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { ProductDto } from './dto/product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 import { AuthGuard } from '../guards/auth.guard';
 import { AdminGuard } from '../guards/admin.guard';
 import { Admin } from '../decorators/admin.decorator';
@@ -211,7 +212,7 @@ console.log('Uploaded files:', files && files.length > 0 ? files.map(f => f.orig
   @UseGuards(AuthGuard)
   async updateProduct(
     @Param('id') id: string, 
-    @Body() productData: ProductDto, 
+    @Body() productData: UpdateProductDto, 
     @Request() req
   ) {
     const userId = req.user?.id;

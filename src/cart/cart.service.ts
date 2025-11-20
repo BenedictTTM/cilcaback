@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { AddToCartDto, UpdateCartItemDto, MergeCartDto } from './dto';
 
 /**
@@ -56,21 +57,21 @@ export class CartService {
       // Use transaction to ensure atomicity
       const result = await this.prisma.$transaction(async (tx) => {
         // Get or create cart
-        let cart = await (tx as any).cart.findUnique({
+        let cart = await tx.cart.findUnique({
           where: { userId },
           include: { items: true },
         });
 
         if (!cart) {
           this.logger.log(`📦 Creating new cart for user ${userId}`);
-          cart = await (tx as any).cart.create({
+          cart = await tx.cart.create({
             data: { userId },
             include: { items: true },
           });
         }
 
         // Check if product already in cart
-        const existingItem = await (tx as any).cartItem.findUnique({
+        const existingItem = await tx.cartItem.findUnique({
           where: {
             cartId_productId: {
               cartId: cart.id,
@@ -89,7 +90,7 @@ export class CartService {
             `✏️ Updating cart item: ${existingItem.quantity} → ${finalQuantity}`
           );
 
-          await (tx as any).cartItem.update({
+          await tx.cartItem.update({
             where: { id: existingItem.id },
             data: { quantity: finalQuantity },
           });
@@ -99,7 +100,7 @@ export class CartService {
 
           this.logger.log(`➕ Creating new cart item with quantity ${finalQuantity}`);
 
-          await (tx as any).cartItem.create({
+          await tx.cartItem.create({
             data: {
               cartId: cart.id,
               productId,
@@ -117,7 +118,7 @@ export class CartService {
         }
 
         // Return updated cart with full details
-        return (tx as any).cart.findUnique({
+        return tx.cart.findUnique({
           where: { id: cart.id },
           include: {
             items: {
@@ -159,7 +160,7 @@ export class CartService {
 
   async getCart(userId: number) {
     try {
-      const cart = await (this.prisma as any).cart.findUnique({
+      const cart = await this.prisma.cart.findUnique({
         where: { userId },
         include: {
           items: {
@@ -227,12 +228,12 @@ export class CartService {
       // If quantity is 0, remove the item
       if (quantity === 0) {
         this.logger.log(`🗑️ Removing cart item ${itemId} (quantity set to 0)`);
-        await (this.prisma as any).cartItem.delete({
+        await this.prisma.cartItem.delete({
           where: { id: itemId },
         });
       } else {
         // Update quantity (no stock validation)
-        await (this.prisma as any).cartItem.update({
+        await this.prisma.cartItem.update({
           where: { id: itemId },
           data: { quantity },
         });
@@ -266,7 +267,7 @@ export class CartService {
   async removeCartItem(userId: number, itemId: number) {
     try {
       // Verify item exists and belongs to user's cart
-      const cartItem = await (this.prisma as any).cartItem.findUnique({
+      const cartItem = await this.prisma.cartItem.findUnique({
         where: { id: itemId },
         include: {
           cart: { select: { userId: true } },
@@ -278,7 +279,7 @@ export class CartService {
       }
 
       // Delete the item
-      await (this.prisma as any).cartItem.delete({
+      await this.prisma.cartItem.delete({
         where: { id: itemId },
       });
 
@@ -298,7 +299,7 @@ export class CartService {
 
   async clearCart(userId: number) {
     try {
-      const cart = await (this.prisma as any).cart.findUnique({
+      const cart = await this.prisma.cart.findUnique({
         where: { userId },
       });
 
@@ -307,7 +308,7 @@ export class CartService {
       }
 
       // Delete all items in the cart
-      await (this.prisma as any).cartItem.deleteMany({
+      await this.prisma.cartItem.deleteMany({
         where: { cartId: cart.id },
       });
 
@@ -327,7 +328,7 @@ export class CartService {
 
   async getCartItemCount(userId: number): Promise<number> {
     try {
-      const cart = await (this.prisma as any).cart.findUnique({
+      const cart = await this.prisma.cart.findUnique({
         where: { userId },
         include: {
           items: {
@@ -367,7 +368,7 @@ export class CartService {
       // Use transaction to ensure all operations succeed or fail together
       const result = await this.prisma.$transaction(async (tx) => {
         // Step 1: Get or create user's cart
-        let cart = await (tx as any).cart.findUnique({
+        let cart = await tx.cart.findUnique({
           where: { userId },
           include: {
             items: {
@@ -388,7 +389,7 @@ export class CartService {
 
         if (!cart) {
           this.logger.log(`📦 Creating new cart for user ${userId}`);
-          cart = await (tx as any).cart.create({
+          cart = await tx.cart.create({
             data: { userId },
             include: {
               items: {
@@ -468,7 +469,7 @@ export class CartService {
             const newQuantity = existingCartItem.quantity + item.quantity;
 
             // Update existing cart item
-            await (tx as any).cartItem.update({
+            await tx.cartItem.update({
               where: { id: existingCartItem.id },
               data: { quantity: newQuantity },
             });
@@ -498,7 +499,7 @@ export class CartService {
             // Product doesn't exist: Add as new item (no stock validation)
             
             // Create new cart item
-            await (tx as any).cartItem.create({
+            await tx.cartItem.create({
               data: {
                 cartId: cart.id,
                 productId: item.productId,
@@ -540,7 +541,7 @@ export class CartService {
         );
 
         // Step 4: Fetch and return the complete merged cart
-        return (tx as any).cart.findUnique({
+        return tx.cart.findUnique({
           where: { id: cart.id },
           include: {
             items: {
@@ -640,3 +641,4 @@ export class CartService {
     };
   }
 }
+

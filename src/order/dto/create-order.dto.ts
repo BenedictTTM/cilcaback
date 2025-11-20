@@ -19,7 +19,7 @@ export class CreateOrderDto {
 
   @IsString()
   @IsOptional()
-  hall?: string;
+  location?: string;
 
   @IsString()
   @IsOptional()
