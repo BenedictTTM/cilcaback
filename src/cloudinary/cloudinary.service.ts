@@ -22,7 +22,11 @@ export class CloudinaryService {
       const upload = v2.uploader.upload_stream(
         {
           resource_type: 'auto',
-          folder: 'products' // Optional: organize uploads in folders
+          folder: 'products', // Optional: organize uploads in folders
+          quality: 'auto:best', // Maximum quality with smart compression
+          fetch_format: 'auto', // Auto-select best format (WebP/AVIF)
+          dpr: 'auto', // Retina display support
+          flags: 'preserve_transparency', // Keep PNG transparency if present
         },
         (error, result) => {
           if (error) {
