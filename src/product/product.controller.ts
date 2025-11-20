@@ -106,14 +106,7 @@ console.log('Uploaded files:', files && files.length > 0 ? files.map(f => f.orig
     return await this.searchProductsService.searchProducts(query, filters, options);
   }
 
-  /**
-   * Get autocomplete suggestions
-   * 🚀 ENTERPRISE GRADE - Cached with Redis for ultra-fast response
-   * 
-   * @route GET /products/search/autocomplete
-   * @query q - Search query
-   * @query limit - Number of suggestions (optional, default: 5)
-   */
+
   @Get('search/autocomplete')
   async getAutocompleteSuggestions(
     @Query('q') query: string,

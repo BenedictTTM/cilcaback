@@ -69,11 +69,11 @@ export class FlashSalesService {
   // Pre-rendering Control
   private isPrerendering = false;
   private readonly PRE_RENDER_MINUTES = 5; // Start preparing 5min before expiry
-  private readonly ROTATION_INTERVAL_MINUTES = 120; // Rotate every 2 hours
+  private readonly ROTATION_INTERVAL_MINUTES = 180; // Rotate every 3 hours
   
   constructor(private prisma: PrismaService) {
     // Initialize both buffers on startup
-    this.logger.log('🔧 PRODUCTION MODE: 2-hour rotation interval');
+    this.logger.log('🔧 PRODUCTION MODE: 3-hour rotation interval');
     this.initializeService();
   }
 
@@ -119,14 +119,14 @@ export class FlashSalesService {
   }
 
   /**
-   * PRIMARY CRON: Runs every 2 hours to swap buffers (0:00, 2:00, 4:00, etc.)
+   * PRIMARY CRON: Runs every 3 hours to swap buffers (0:00, 3:00, 6:00, etc.)
    * This is instant because next batch is already pre-rendered
    */
-  @Cron('0 */2 * * *') // Every 2 hours at the top of the hour
+  @Cron('0 */3 * * *') // Every 3 hours at the top of the hour
   async handleRotationSwap() {
     const now = new Date();
     this.logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    this.logger.log('🔄 2-HOUR ROTATION TRIGGERED');
+    this.logger.log('🔄 3-HOUR ROTATION TRIGGERED');
     this.logger.log(`⏰ Trigger time: ${now.toISOString()}`);
     this.logger.log(`📊 Current batch size: ${this.currentBatch.length}`);
     this.logger.log(`📊 Next batch size: ${this.nextBatch.length}`);
@@ -139,10 +139,10 @@ export class FlashSalesService {
   }
 
   /**
-   * SECONDARY CRON: Runs at 55 minutes past odd hours (1:55, 3:55, 5:55, etc.)
-   * Pre-renders 5 minutes before the 2-hour swap
+   * SECONDARY CRON: Runs at 55 minutes past hours preceding rotation (2:55, 5:55, etc.)
+   * Pre-renders 5 minutes before the 3-hour swap
    */
-  @Cron('55 1,3,5,7,9,11,13,15,17,19,21,23 * * *') // 5 minutes before each even hour
+  @Cron('55 2,5,8,11,14,17,20,23 * * *') // 5 minutes before each 3-hour mark
   async handlePreRender() {
     const now = new Date();
     this.logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -378,9 +378,16 @@ export class FlashSalesService {
       const goodProducts: FlashSaleProduct[] = []; // 10-19% discount
       const anyDiscountProducts: FlashSaleProduct[] = []; // Any discount
       
+      this.logger.log(`🔍 Database returned ${products.length} raw candidates`);
+      let skippedNoUser = 0;
+      let skippedLowDiscount = 0;
+
       for (const product of products) {
         // Skip products without a user
-        if (!product.user) continue;
+        // if (!product.user) {
+        //   skippedNoUser++;
+        //   continue;
+        // }
         
         const discountPercentage = this.calculateDiscount(
           product.originalPrice,
@@ -388,7 +395,10 @@ export class FlashSalesService {
         );
         
         // Skip products with no meaningful discount
-        if (discountPercentage < 5) continue;
+        if (discountPercentage < 5) {
+          skippedLowDiscount++;
+          continue;
+        }
         
         const productWithDiscount = {
           ...product,
@@ -405,6 +415,10 @@ export class FlashSalesService {
         } else {
           anyDiscountProducts.push(productWithDiscount);
         }
+      }
+
+      if (skippedNoUser > 0 || skippedLowDiscount > 0) {
+        this.logger.warn(`⚠️ Skipped products: No User=${skippedNoUser}, Low Discount(<5%)=${skippedLowDiscount}`);
       }
 
       this.logger.log(
@@ -501,15 +515,15 @@ export class FlashSalesService {
   }
 
   /**
-   * Get the next rotation time (every 2 hours at even hours: 0:00, 2:00, 4:00, etc.)
+   * Get the next rotation time (every 3 hours: 0:00, 3:00, 6:00, etc.)
    */
   private getNextRotationTime(): Date {
     const now = new Date();
     const next = new Date(now);
     
-    // Round up to next 2-hour mark (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22)
+    // Round up to next 3-hour mark (0, 3, 6, 9, 12, 15, 18, 21)
     const currentHour = next.getHours();
-    const nextInterval = Math.ceil((currentHour + 1) / 2) * 2;
+    const nextInterval = Math.ceil((currentHour + 1) / 3) * 3;
     
     next.setHours(nextInterval % 24, 0, 0, 0);
     
