@@ -92,18 +92,19 @@ export class AuthController {
   @Get('me')
   @UseGuards(AuthGuard)
   async getCurrentUser(@GetUser() user: any) {
-    // Return sanitized user object (no sensitive data)
+    // Return complete user profile data (no sensitive data like password)
     return {
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        createdAt: user.createdAt,
-
-      },
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profilePic: user.profilePic,
+      storeName: user.storeName,
+      phone: user.phone,
+      role: user.role,
+      rating: user.rating || 0,
+      totalRatings: user.totalRatings || 0,
+      createdAt: user.createdAt,
     };
   }
 }
