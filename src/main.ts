@@ -23,9 +23,8 @@ async function bootstrap() {
   // Enable CORS for frontend connection
   const allowedOrigins = [
     'http://localhost:3000',
-    'https://sellr-front-end.vercel.app',
     // Added deployed frontend domain for CORS
-    'https://cilcahair.vercel.app',
+    'https://clicahair.vercel.app',
     process.env.FRONTEND_URL,
   ].filter(Boolean);
   
