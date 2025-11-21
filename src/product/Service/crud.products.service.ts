@@ -49,6 +49,26 @@ export class CrudService {
 
       // OPTIMIZATION: Fast transaction with minimal scope
       const newProduct = await this.prisma.$transaction(async (prisma) => {
+        let categoryName = productDataWithoutUser.category;
+        
+        // If categoryId is provided, validate it and get the name
+        if (productDataWithoutUser.categoryId) {
+          const category = await prisma.category.findUnique({
+            where: { id: productDataWithoutUser.categoryId },
+          });
+          
+          if (!category) {
+            throw new BadRequestException(`Category with ID ${productDataWithoutUser.categoryId} not found`);
+          }
+          
+          // Use category name if category string is not provided
+          if (!categoryName) {
+            categoryName = category.name;
+          }
+        } else if (!categoryName) {
+           throw new BadRequestException('Either category (string) or categoryId must be provided');
+        }
+
         // Create product (note: slot management removed from schema)
         const created = await prisma.product.create({
           data: {
@@ -56,7 +76,8 @@ export class CrudService {
             description: productDataWithoutUser.description,
             originalPrice: productDataWithoutUser.originalPrice,
             discountedPrice: productDataWithoutUser.discountedPrice,
-            category: productDataWithoutUser.category,
+            category: categoryName,
+            categoryId: productDataWithoutUser.categoryId,
             imageUrl: imageUrls,
             isActive: true,
             isSold: false,
@@ -64,6 +85,7 @@ export class CrudService {
             tags: productDataWithoutUser.tags ?? [],
             stock: productDataWithoutUser.stock ?? 0,
             views: productDataWithoutUser.views ?? 0,
+            userId: userId,
           },
         });
 

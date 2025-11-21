@@ -35,7 +35,12 @@ export class ProductDto {
     views?: number;
 
     @IsString({ message: 'Category must be a string' })
-    category: string;
+    @IsOptional()
+    category?: string;
+
+    @IsNumber()
+    @IsOptional()
+    categoryId?: number;
 
     @IsNotEmpty({ message: 'User ID is required' })
     @IsOptional()

@@ -10,6 +10,7 @@ import { CartModule } from './cart/cart.module';
 import { SearchModule } from './search/search.module';
 import { PaymentModule } from './payment/payment.module';
 import { OrderModule } from './order/order.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { OrderModule } from './order/order.module';
     CartModule,
     SearchModule, // PostgreSQL Full-Text Search
     PaymentModule,
-
+    CategoryModule,
     OrderModule,
   ],
 })

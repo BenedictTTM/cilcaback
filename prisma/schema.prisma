@@ -40,12 +40,23 @@ model User {
   @@index([role])
 }
 
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+}
+
 model Product {
   id               Int            @id @default(autoincrement())
   title            String
   description      String?
   imageUrl         String[]
   category         String
+  categoryId       Int?
+  categoryRel      Category?      @relation(fields: [categoryId], references: [id])
   originalPrice    Float
   discountedPrice  Float
   stock            Int
@@ -66,6 +77,10 @@ model Product {
   reviews          Review[]
   cartItems        CartItem[]
   orderItems       OrderItem[]
+
+  // Search fields (Generated columns in DB)
+  searchText       String?
+  searchVector     Unsupported("tsvector")?
 
   // Performance indexes for high-traffic queries
   @@index([userId])
