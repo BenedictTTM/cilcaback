@@ -62,8 +62,18 @@ async function bootstrap() {
   }));
   
   const port = process.env.PORT || 3001;
+  // Log whether a DATABASE_URL is present (don't print the value)
+  console.log('DATABASE_URL configured:', !!process.env.DATABASE_URL);
   await app.listen(port);
   console.log(`🚀 Application is running on port ${port}`);
 }
 bootstrap();
+
+// Capture bootstrap errors
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection at:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception thrown:', err);
+});
 

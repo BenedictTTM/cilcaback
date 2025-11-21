@@ -28,8 +28,13 @@ export class CategoryController {
   }
 
   @Get()
-  findAll() {
-    return this.categoryService.findAll();
+  async findAll() {
+    try {
+      return await this.categoryService.findAll();
+    } catch (error) {
+      console.error('CategoryController.findAll error:', error);
+      throw error;
+    }
   }
 
   @Get(':id')
