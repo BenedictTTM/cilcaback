@@ -1,6 +1,6 @@
-import { IsEnum, IsInt, IsOptional, IsString, Min, Max, IsIn } from 'class-validator';
+import { IsInt, IsOptional, IsString, Min, Max, IsIn, MinLength } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ProductCategory } from '../categories/category.enum';
+import { ProductCategory, isValidCategory } from '../categories/category.enum';
 
 /**
  * DTO for category-based product retrieval
@@ -9,10 +9,9 @@ import { ProductCategory } from '../categories/category.enum';
  * @class GetProductsByCategoryDto
  */
 export class GetProductsByCategoryDto {
-  @IsEnum(ProductCategory, {
-    message: 'Invalid category. Must be one of: clothes, accessories, home, books, sports_and_outing, others',
-  })
-  category: ProductCategory;
+  @IsString({ message: 'Category must be a string' })
+  @MinLength(1, { message: 'Category cannot be empty' })
+  category: ProductCategory; // dynamic string category
 
   @IsOptional()
   @Type(() => Number)

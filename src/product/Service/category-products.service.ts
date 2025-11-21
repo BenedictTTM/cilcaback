@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ProductCategory, CATEGORY_METADATA, getCategoryMetadata, normalizeCategoryInput } from '../categories/category.enum';
+import { ProductCategory, CATEGORY_METADATA, getCategoryMetadata, normalizeCategoryInput, generateMetadataForCategory } from '../categories/category.enum';
 import { GetProductsByCategoryDto, CategoryProductsResponseDto, CategoryStatsDto } from '../dto/category.dto';
 import { Prisma } from '@prisma/client';
 
@@ -36,17 +36,12 @@ export class CategoryProductsService {
     const startTime = Date.now();
     
     try {
-      // OPTIMIZATION 1: Early validation and normalization
-      const normalizedCategory = normalizeCategoryInput(dto.category);
-      if (!normalizedCategory) {
-        throw new BadRequestException(`Invalid category: ${dto.category}`);
-      }
+      // OPTIMIZATION 1: Use raw category input (no normalization requested)
+      const categoryKey = dto.category as any;
 
       // OPTIMIZATION 2: Get category metadata early (from in-memory cache)
-      const categoryMetadata = getCategoryMetadata(normalizedCategory);
-      if (!categoryMetadata) {
-        throw new BadRequestException(`Category metadata not found for: ${normalizedCategory}`);
-      }
+      // Retrieve metadata or generate fallback for dynamic categories
+      const categoryMetadata = getCategoryMetadata(categoryKey) || generateMetadataForCategory(dto.category);
 
       // OPTIMIZATION 3: Calculate pagination early to validate request
       const page = Math.max(1, dto.page || 1);
@@ -54,7 +49,7 @@ export class CategoryProductsService {
       const skip = (page - 1) * limit;
 
       // OPTIMIZATION 4: Build optimized query clauses
-      const whereClause = this.buildWhereClause(normalizedCategory, dto);
+      const whereClause = this.buildWhereClause(categoryKey, dto);
       const orderByClause = this.buildOrderByClause(dto.sortBy || 'newest');
 
       // OPTIMIZATION 5: Execute queries in parallel (CRITICAL for performance)
@@ -84,7 +79,7 @@ export class CategoryProductsService {
       // Log performance metrics for monitoring
       const duration = Date.now() - startTime;
       this.logger.log(
-        `✅ Category query | ${normalizedCategory} | ` +
+        `✅ Category query | ${categoryKey} | ` +
         `${products.length}/${totalCount} products | ` +
         `${duration}ms${duration > 1000 ? ' ⚠️ SLOW' : duration > 500 ? ' 🐌' : ' ⚡'}`
       );
@@ -119,6 +114,76 @@ export class CategoryProductsService {
       }
       
       throw new BadRequestException('Failed to fetch products. Please try again.');
+    }
+  }
+
+  /**
+   * Get products by multiple category IDs with advanced filtering and pagination
+   * Mirrors getProductsByCategory but targets numeric category IDs for relational integrity.
+   */
+  async getProductsByCategoryIds(dto: { categoryIds: number[]; page?: number; limit?: number; sortBy?: string; condition?: string; minPrice?: number; maxPrice?: number; inStock?: boolean; }): Promise<CategoryProductsResponseDto> {
+    const startTime = Date.now();
+
+    try {
+      if (!dto.categoryIds || dto.categoryIds.length === 0) {
+        throw new BadRequestException('At least one categoryId is required');
+      }
+
+      const page = Math.max(1, dto.page || 1);
+      const limit = Math.min(Math.max(1, dto.limit || this.DEFAULT_LIMIT), this.MAX_LIMIT);
+      const skip = (page - 1) * limit;
+
+      const whereClause = this.buildWhereClauseByIds(dto.categoryIds, dto);
+      const orderByClause = this.buildOrderByClause(dto.sortBy || 'newest');
+
+      const [products, totalCount] = await Promise.all([
+        this.prisma.product.findMany({
+          where: whereClause,
+          select: this.getProductSelectFields(),
+          orderBy: orderByClause,
+          skip,
+          take: limit,
+        }),
+        this.prisma.product.count({ where: whereClause }),
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+      const transformedProducts = this.transformProductsBatch(products);
+
+      const duration = Date.now() - startTime;
+      this.logger.log(
+        `✅ CategoryIds query | [${dto.categoryIds.join(',')}] | ` +
+        `${products.length}/${totalCount} products | ${duration}ms`
+      );
+
+      return {
+        data: transformedProducts,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1,
+        },
+        // For multi-category queries, return a generic category descriptor
+        category: {
+          key: 'multiple',
+          label: 'Multiple Categories',
+          description: 'Combined results across selected categories.',
+        },
+        filters: this.getAppliedFilters(dto),
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.error(
+        `❌ CategoryIds query failed | [${dto.categoryIds?.join(',')}] | ${duration}ms`,
+        error.stack
+      );
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to fetch products by category IDs. Please try again.');
     }
   }
 
@@ -217,29 +282,27 @@ export class CategoryProductsService {
       });
 
       // OPTIMIZATION: Create a lookup map for O(1) access
-      const countMap = new Map(
-        categoryCounts.map(c => [c.category, c._count.id])
+      const countMap = new Map<string, number>(
+        categoryCounts.map(c => [c.category as string, c._count.id])
       );
 
       // OPTIMIZATION: Single-pass transformation
-      const categories = Object.values(ProductCategory)
-        .map(cat => {
-          const metadata = getCategoryMetadata(cat);
-          
-          if (!metadata) {
-            this.logger.warn(`Missing metadata for category: ${cat}`);
-            return null;
-          }
+      // Build dynamic union of metadata keys and categories found in DB
+      const dynamicKeys = new Set<string>([
+        ...Object.keys(CATEGORY_METADATA),
+        ...Array.from(countMap.keys()).filter((k): k is string => typeof k === 'string' && k.length > 0),
+      ]);
 
-          return {
-            category: cat,
-            label: metadata.label,
-            description: metadata.description,
-            icon: metadata.icon,
-            productCount: countMap.get(cat) || 0,
-          };
-        })
-        .filter((cat): cat is NonNullable<typeof cat> => cat !== null); // Type-safe filter
+      const categories = Array.from(dynamicKeys.values()).map(catKey => {
+        const metadata = getCategoryMetadata(catKey) || generateMetadataForCategory(catKey);
+        return {
+          category: catKey,
+          label: metadata.label,
+          description: metadata.description,
+          icon: metadata.icon,
+          productCount: countMap.get(catKey) || 0,
+        };
+      });
 
       // Sort by product count (most popular first)
       categories.sort((a, b) => b.productCount - a.productCount);
@@ -299,6 +362,33 @@ export class CategoryProductsService {
   }
 
   /**
+   * Build WHERE clause for categoryId IN queries
+   */
+  private buildWhereClauseByIds(categoryIds: number[], dto: { condition?: string; minPrice?: number; maxPrice?: number; inStock?: boolean }): Prisma.ProductWhereInput {
+    const where: Prisma.ProductWhereInput = {
+      categoryId: { in: categoryIds },
+      isActive: true,
+      isSold: false,
+    };
+
+    if (dto.condition) {
+      where.condition = { equals: dto.condition, mode: 'insensitive' } as any;
+    }
+
+    if (dto.minPrice !== undefined || dto.maxPrice !== undefined) {
+      where.discountedPrice = {};
+      if (dto.minPrice !== undefined) where.discountedPrice.gte = dto.minPrice;
+      if (dto.maxPrice !== undefined) where.discountedPrice.lte = dto.maxPrice;
+    }
+
+    if (dto.inStock) {
+      where.stock = { gt: 0 };
+    }
+
+    return where;
+  }
+
+  /**
    * Build ORDER BY clause based on sort strategy
    * 
    * PERFORMANCE: Returns pre-defined sort objects
@@ -339,6 +429,7 @@ export class CategoryProductsService {
       description: true,
       imageUrl: true,
       category: true,
+      categoryId: true,
       originalPrice: true,
       discountedPrice: true,
       stock: true,
@@ -383,6 +474,13 @@ export class CategoryProductsService {
           fee: true,
         },
       },
+      // Optional: basic category relation info for display
+      categoryRel: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     };
   }
 
@@ -402,18 +500,21 @@ export class CategoryProductsService {
         ? Math.round(((product.originalPrice - product.discountedPrice) / product.originalPrice) * 100)
         : 0;
 
+      // Handle null user gracefully
+      const user = product.user || {};
+      
       return {
         ...product,
         discountPercentage,
         inStock: product.stock > 0,
         seller: {
-          id: product.user.id,
-          username: product.user.username,
-          firstName: product.user.firstName,
-          lastName: product.user.lastName,
-          profilePic: product.user.profilePic,
-          rating: product.user.rating,
-          fullName: `${product.user.firstName || ''} ${product.user.lastName || ''}`.trim(),
+          id: user.id || null,
+          username: user.username || 'Unknown',
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          profilePic: user.profilePic || null,
+          rating: user.rating || 0,
+          fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown Seller',
         },
         // Remove nested user object to reduce payload size
         user: undefined,
@@ -473,7 +574,7 @@ export class CategoryProductsService {
    * 
    * @private
    */
-  private getAppliedFilters(dto: GetProductsByCategoryDto): Record<string, any> | undefined {
+  private getAppliedFilters(dto: { condition?: string; minPrice?: number; maxPrice?: number; sortBy?: string }): Record<string, any> | undefined {
     const filters: Record<string, any> = {};
     let hasFilters = false;
 

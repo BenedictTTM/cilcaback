@@ -1,27 +1,18 @@
 /**
- * Product Category Enumeration
- * 
- * Enterprise-grade category definition following domain-driven design principles.
- * This enum ensures type safety and prevents invalid category values.
- * 
- * @enum {string}
- * @description Supported product categories in the e-commerce platform
+ * Dynamic Product Category Type
+ *
+ * Replaces the previous static enum with a string alias so categories
+ * can be created dynamically (e.g. from the database). Existing imports
+ * referencing `ProductCategory` remain valid.
  */
-export enum ProductCategory {
-  CLOTHES = 'clothes',
-  ACCESSORIES = 'accessories',
-  HOME = 'home',
-  BOOKS = 'books',
-  SPORTS_AND_OUTING = 'sports_and_outing',
-  OTHERS = 'others',
-}
+export type ProductCategory = string;
 
 /**
  * Category metadata for enhanced UX and SEO
  * Following the Open/Closed Principle - open for extension, closed for modification
  */
 export interface CategoryMetadata {
-  key: ProductCategory;
+  key: string;
   label: string;
   description: string;
   icon?: string;
@@ -33,54 +24,62 @@ export interface CategoryMetadata {
  * Category configuration with metadata
  * Single source of truth for all category-related information
  */
-export const CATEGORY_METADATA: Record<ProductCategory, CategoryMetadata> = {
-  [ProductCategory.CLOTHES]: {
-    key: ProductCategory.CLOTHES,
-    label: 'Clothes & Fashion',
-    description: 'Clothing, apparel, and fashion items',
-    icon: 'shirt',
-    seoKeywords: ['fashion', 'clothing', 'apparel', 'wear', 'outfit'],
-    popularTags: ['men', 'women', 'casual', 'formal', 'vintage'],
+export const CATEGORY_METADATA: Record<string, CategoryMetadata> = {
+  natural_hair: {
+    key: 'natural_hair',
+    label: 'Natural Hair',
+    description: 'Authentic natural hair textures for versatile styling.',
+    icon: 'flower',
+    seoKeywords: ['natural hair', 'afro', 'textured', 'virgin hair', 'kinky'],
+    popularTags: ['4c', 'kinky', 'afro', 'coily', 'protective'],
   },
-  [ProductCategory.ACCESSORIES]: {
-    key: ProductCategory.ACCESSORIES,
-    label: 'Accessories',
-    description: 'Fashion accessories, jewelry, bags, and more',
-    icon: 'watch',
-    seoKeywords: ['accessories', 'jewelry', 'bags', 'watches', 'sunglasses'],
-    popularTags: ['jewelry', 'bags', 'watches', 'belts', 'scarves'],
+  straight_wigs: {
+    key: 'straight_wigs',
+    label: 'Straight Wigs',
+    description: 'Premium straight wigs offering sleek, polished looks.',
+    icon: 'scissors',
+    seoKeywords: ['straight wigs', 'silky', 'bone straight', 'lace', 'human hair'],
+    popularTags: ['bone straight', 'HD lace', 'middle part', 'natural line'],
   },
-  [ProductCategory.HOME]: {
-    key: ProductCategory.HOME,
-    label: 'Home & Living',
-    description: 'Home decor, furniture, and household items',
-    icon: 'home',
-    seoKeywords: ['home', 'furniture', 'decor', 'household', 'kitchen'],
-    popularTags: ['furniture', 'decor', 'kitchen', 'bedding', 'storage'],
+  'curly_&_wavy_wigs': {
+    key: 'curly_&_wavy_wigs',
+    label: 'Curly & Wavy Wigs',
+    description: 'Beautiful curly and wavy wigs providing volume, bounce, and texture.',
+    icon: 'waves',
+    seoKeywords: ['curly wigs', 'wavy wigs', 'deep wave', 'body wave', 'loose curl'],
+    popularTags: ['body wave', 'deep curl', 'water wave', 'loose curl', 'kinky curl'],
   },
-  [ProductCategory.BOOKS]: {
-    key: ProductCategory.BOOKS,
-    label: 'Books & Media',
-    description: 'Books, textbooks, magazines, and educational materials',
-    icon: 'book',
-    seoKeywords: ['books', 'textbooks', 'novels', 'education', 'reading'],
-    popularTags: ['textbooks', 'novels', 'academic', 'fiction', 'non-fiction'],
+  braided_wigs: {
+    key: 'braided_wigs',
+    label: 'Braided Wigs',
+    description: 'Handcrafted braided wigs delivering protective styling and elegance.',
+    icon: 'shield',
+    seoKeywords: ['braided wigs', 'box braids', 'twists', 'cornrow', 'protective style'],
+    popularTags: ['box braids', 'knotless', 'cornrow', 'twists', 'fulani'],
   },
-  [ProductCategory.SPORTS_AND_OUTING]: {
-    key: ProductCategory.SPORTS_AND_OUTING,
-    label: 'Sports & Outdoors',
-    description: 'Sports equipment, outdoor gear, and fitness items',
-    icon: 'dumbbell',
-    seoKeywords: ['sports', 'fitness', 'outdoor', 'camping', 'exercise'],
-    popularTags: ['fitness', 'camping', 'hiking', 'sports gear', 'outdoor'],
+  'frontal_&_closure_wigs': {
+    key: 'frontal_&_closure_wigs',
+    label: 'Frontal & Closure Wigs',
+    description: 'High-quality frontal and closure wigs for seamless hairlines.',
+    icon: 'layout',
+    seoKeywords: ['frontal wig', 'closure wig', 'HD frontal', 'transparent lace', 'pre-plucked'],
+    popularTags: ['13x4 frontal', '5x5 closure', 'HD lace', 'transparent lace', 'pre-plucked'],
   },
-  [ProductCategory.OTHERS]: {
-    key: ProductCategory.OTHERS,
-    label: 'Other Items',
-    description: 'Miscellaneous items and unique products',
-    icon: 'grid',
-    seoKeywords: ['miscellaneous', 'other', 'unique', 'various'],
-    popularTags: ['unique', 'miscellaneous', 'special'],
+  'hair_bundles_&_extensions': {
+    key: 'hair_bundles_&_extensions',
+    label: 'Hair Bundles & Extensions',
+    description: 'Premium hair bundles and extensions for length and volume.',
+    icon: 'layers',
+    seoKeywords: ['hair bundles', 'extensions', 'weft', 'clip-ins', 'virgin hair'],
+    popularTags: ['bundle deals', 'virgin hair', 'raw hair', 'clip-ins', 'weft'],
+  },
+  'wig_care_&_accessories': {
+    key: 'wig_care_&_accessories',
+    label: 'Wig Care & Accessories',
+    description: 'Essential wig care accessories and maintenance products.',
+    icon: 'tool',
+    seoKeywords: ['wig care', 'accessories', 'maintenance', 'lace glue', 'edge control'],
+    popularTags: ['lace glue', 'edge control', 'wig stand', 'detangler', 'silk cap'],
   },
 };
 
@@ -90,7 +89,8 @@ export const CATEGORY_METADATA: Record<ProductCategory, CategoryMetadata> = {
  * @returns boolean indicating if category is valid
  */
 export function isValidCategory(category: string): category is ProductCategory {
-  return Object.values(ProductCategory).includes(category as ProductCategory);
+  // If present in metadata treat as valid; otherwise allow any non-empty string
+  return !!category && (category in CATEGORY_METADATA || category.trim().length > 0);
 }
 
 /**
@@ -98,7 +98,7 @@ export function isValidCategory(category: string): category is ProductCategory {
  * @returns Array of all valid category values
  */
 export function getAllCategories(): ProductCategory[] {
-  return Object.values(ProductCategory);
+  return Object.keys(CATEGORY_METADATA);
 }
 
 /**
@@ -117,11 +117,31 @@ export function getCategoryMetadata(category: ProductCategory): CategoryMetadata
  * @returns Normalized ProductCategory or null
  */
 export function normalizeCategoryInput(input: string): ProductCategory | null {
-  const normalized = input.toLowerCase().trim().replace(/\s+/g, '_');
-  
-  if (isValidCategory(normalized)) {
-    return normalized as ProductCategory;
-  }
-  
-  return null;
+  if (!input) return null;
+  // Preserve special characters like & by replacing spaces only
+  const normalized = input
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '_');
+  return normalized.length ? normalized : null;
+}
+
+/**
+ * Generate fallback metadata for categories not present in CATEGORY_METADATA.
+ */
+export function generateMetadataForCategory(rawName: string): CategoryMetadata {
+  const key = normalizeCategoryInput(rawName) || rawName;
+  const label = rawName
+    .split(/[_\s]+/)
+    .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(' ')
+    .replace(/&/g, '&');
+  return {
+    key,
+    label,
+    description: `Explore our ${label} collection.`,
+    icon: 'grid',
+    seoKeywords: [label.toLowerCase(), 'hair', 'wigs', 'beauty'],
+    popularTags: [],
+  };
 }
