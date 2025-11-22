@@ -8,8 +8,100 @@ import { PaymentService } from '../payment/payment.service';
 export class OrderService {
   constructor(private readonly prisma: PrismaService, private readonly paymentService: PaymentService) {}
   async createOrder(buyerId: number, dto: CreateOrderDto) {
-    const { productId, quantity, whatsappNumber, callNumber, location, message } = dto;
+    const { productId, quantity, whatsappNumber, callNumber, location, message, items } = dto as any;
 
+    // Multi-item order flow
+    if (items && Array.isArray(items) && items.length > 0) {
+      // Aggregate quantities by productId in case of duplicates
+      const agg: Record<number, number> = {};
+      for (const it of items) {
+        const pid = Number(it.productId);
+        const qty = Number(it.quantity) || 0;
+        if (!pid || qty < 1) throw new BadRequestException('Invalid items payload');
+        agg[pid] = (agg[pid] || 0) + qty;
+      }
+
+      const productIds = Object.keys(agg).map(k => Number(k));
+
+      const products = await this.prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: {
+          id: true,
+          title: true,
+          userId: true,
+          stock: true,
+          isActive: true,
+          isSold: true,
+          originalPrice: true,
+          discountedPrice: true,
+        },
+      });
+
+      if (products.length !== productIds.length) {
+        throw new NotFoundException('One or more products not found');
+      }
+
+      // Validate products and compute total
+      let totalAmount = 0;
+      for (const p of products) {
+        const reqQty = agg[p.id] || 0;
+        if (!p.isActive) throw new NotFoundException(`Product ${p.id} is inactive`);
+        if (p.userId === buyerId) throw new ForbiddenException('You cannot order your own product');
+        if (p.isSold || p.stock <= 0) throw new BadRequestException(`Product ${p.id} is sold out`);
+        if (reqQty > p.stock) throw new BadRequestException(`Insufficient stock for product ${p.id}`);
+        const unit = p.discountedPrice ?? p.originalPrice ?? 0;
+        totalAmount += unit * reqQty;
+      }
+
+      // Build product updates and order create data
+      const tx: any[] = [];
+      for (const p of products) {
+        const reqQty = agg[p.id] || 0;
+        tx.push(
+          this.prisma.product.update({
+            where: { id: p.id },
+            data: {
+              stock: { decrement: reqQty },
+              isSold: p.stock - reqQty <= 0 ? true : p.isSold,
+            },
+          }) as any,
+        );
+      }
+
+      const orderCreate = (this.prisma as any).order.create({
+        data: {
+          buyerId,
+          whatsappNumber,
+          callNumber,
+          location,
+          buyerMessage: message,
+          status: 'PENDING',
+          currency: 'GHS',
+          totalAmount,
+          items: {
+            create: products.map(p => ({
+              productId: p.id,
+              quantity: agg[p.id],
+              unitPrice: p.discountedPrice ?? p.originalPrice ?? 0,
+              productName: p.title,
+            })),
+          },
+        },
+        include: {
+          items: {
+            include: { product: { select: { id: true, userId: true, title: true } } },
+          },
+        },
+      }) as any;
+
+      tx.push(orderCreate);
+
+      const results = await this.prisma.$transaction(tx as any);
+      const createdOrder = results[results.length - 1];
+      return createdOrder;
+    }
+
+    // Single-item order (existing behavior)
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
       select: {
