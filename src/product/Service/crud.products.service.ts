@@ -118,6 +118,10 @@ export class CrudService {
     if (!product) {
       throw new NotFoundException(`Product with ID ${productId} not found`);
     }
+
+    if (product.userId !== userId) {
+      throw new ForbiddenException('You can only update your own products');
+    }
     
 
     try {
@@ -151,6 +155,27 @@ export class CrudService {
     if (!product) {
       throw new NotFoundException(`Product with ID ${productId} not found`);
     }
+
+    // Check for related records that prevent deletion
+    const cartItemsCount = await (this.prisma as any).cartItem.count({
+      where: { productId },
+    });
+    const orderItemsCount = await (this.prisma as any).orderItem.count({
+      where: { productId },
+    });
+    const reviewsCount = await (this.prisma as any).review.count({
+      where: { productId },
+    });
+    const imagesCount = await (this.prisma as any).productImage.count({
+      where: { productId },
+    });
+    const deliveryCount = await (this.prisma as any).delivery.count({
+      where: { productId },
+    });
+
+    if (cartItemsCount > 0 || orderItemsCount > 0 || reviewsCount > 0 || imagesCount > 0 || deliveryCount > 0) {
+      throw new BadRequestException('Cannot delete product with existing cart items, orders, reviews, images, or delivery info');
+    }
     
 
     try {
@@ -164,8 +189,8 @@ export class CrudService {
       return { success: true, data: deleted };
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.error(`❌ Delete failed | ID:${productId} | ${duration}ms`);
-      throw new InternalServerErrorException('Failed to delete product');
+      this.logger.error(`❌ Delete failed | ID:${productId} | ${duration}ms | ${error.message}`);
+      throw new InternalServerErrorException(`Failed to delete product: ${error.message}`);
     }
   }
 }
