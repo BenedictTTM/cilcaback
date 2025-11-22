@@ -138,13 +138,12 @@ export class CrudService {
   }
 
   /**
-   * Soft delete product (set isActive to false)
+   * Hard delete product
    */
   async deleteProduct(productId: number, userId: number) {
     const startTime = Date.now();
-    
-    // OPTIMIZATION: Minimal fields for ownership check
-    const product = await (this.prisma as any).product.findUnique({
+
+        const product = await (this.prisma as any).product.findUnique({
       where: { id: productId },
       select: { id: true, userId: true },
     });
@@ -153,20 +152,16 @@ export class CrudService {
       throw new NotFoundException(`Product with ID ${productId} not found`);
     }
     
-    if (product.userId !== userId) {
-      throw new ForbiddenException('You are not allowed to delete this product');
-    }
 
     try {
-      const softDeleted = await (this.prisma as any).product.update({
+      const deleted = await (this.prisma as any).product.delete({
         where: { id: productId },
-        data: { isActive: false },
       });
 
       const duration = Date.now() - startTime;
       this.logger.log(`✅ Product deleted | ID:${productId} | ${duration}ms`);
 
-      return { success: true, data: softDeleted };
+      return { success: true, data: deleted };
     } catch (error) {
       const duration = Date.now() - startTime;
       this.logger.error(`❌ Delete failed | ID:${productId} | ${duration}ms`);
