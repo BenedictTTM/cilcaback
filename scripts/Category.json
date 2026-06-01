@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "name": "Brazilian Hair",
+    "description": "High-quality Brazilian hair bundles and weaves",
+    "createdAt": "2026-04-02 10:58:08.962",
+    "updatedAt": "2026-04-02 10:58:08.962"
+  },
+  {
+    "id": 2,
+    "name": "Natural Hair",
+    "description": "Natural hair products and accessories",
+    "createdAt": "2026-04-02 10:58:12.930",
+    "updatedAt": "2026-04-02 10:58:12.930"
+  },
+  {
+    "id": 3,
+    "name": "Synthetic Hair",
+    "description": "Premium synthetic hair extensions and braids",
+    "createdAt": "2026-04-03 17:57:35.928",
+    "updatedAt": "2026-04-03 17:57:35.928"
+  },
+  {
+    "id": 5,
+    "name": "Wigs & Extensions",
+    "description": "Lace front wigs, closures, and extensions",
+    "createdAt": "2026-04-03 17:58:57.204",
+    "updatedAt": "2026-04-03 17:58:57.204"
+  },
+  {
+    "id": 6,
+    "name": "Hair Care Products",
+    "description": "Shampoos, conditioners, and styling products",
+    "createdAt": "2026-04-03 17:58:59.349",
+    "updatedAt": "2026-04-03 17:58:59.349"
+  },
+  {
+    "id": 7,
+    "name": "Hair Accessories",
+    "description": "Clips, bands, bonnets, and styling tools",
+    "createdAt": "2026-04-03 17:59:01.477",
+    "updatedAt": "2026-04-03 17:59:01.477"
+  }
+]
