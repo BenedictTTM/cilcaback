@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 
 
@@ -18,13 +18,19 @@ export class KeepAliveService implements OnModuleInit {
       process.env.SERVER_URL ||
       `http://localhost:${port}`;
 
+    if (process.env.DISABLE_KEEPALIVE === 'true') {
+      this.logger.log('KeepAlive is DISABLED via environment variable to conserve free server hours.');
+      return;
+    }
+
     this.logger.log(
-      `KeepAlive initialised — DB ping every 4 min, HTTP self-ping every 10 min (${this.serverUrl})`,
+      `KeepAlive initialised — DB ping every 30 min, HTTP self-ping every 20 min (${this.serverUrl})`,
     );
   }
 
   @Cron('*/30 * * * *') // every 30 minutes
   async pingDatabase() {
+    if (process.env.DISABLE_KEEPALIVE === 'true') return;
     if (process.env.NODE_ENV === 'production') return; // ← skip in prod
 
     try {
@@ -44,8 +50,9 @@ export class KeepAliveService implements OnModuleInit {
   }
 
 
-  @Cron('*/20 * * * *') // every 10 minutes
+  @Cron('*/20 * * * *') // every 20 minutes
   async selfPing() {
+    if (process.env.DISABLE_KEEPALIVE === 'true') return;
     try {
       const start = Date.now();
       const url = `${this.serverUrl}/health`;

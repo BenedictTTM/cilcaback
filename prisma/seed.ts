@@ -88,26 +88,35 @@ async function main() {
         const posts = JSON.parse(rawData);
         let count = 0;
         for (const post of posts) {
-             const existing = await prisma.blogPost.findUnique({ where: { slug: post.slug } });
-             if (!existing) {
-                 await prisma.blogPost.create({
-                     data: {
-                         title: post.title,
-                         slug: post.slug,
-                         content: post.content,
-                         excerpt: post.excerpt,
-                         coverImage: post.coverImage,
-                         category: post.category || 'Uncategorized',
-                         tags: post.tags || [],
-                         status: post.status || 'PUBLISHED',
-                         featured: post.featured || false,
-                         views: post.views || 0,
-                         authorId: dummyAdmin.id,
-                         publishedAt: post.publishedAt ? new Date(post.publishedAt) : null,
-                     }
-                 });
-                 count++;
-             }
+             await prisma.blogPost.upsert({
+                 where: { slug: post.slug },
+                 update: {
+                     title: post.title,
+                     content: post.content,
+                     excerpt: post.excerpt,
+                     coverImage: post.coverImage,
+                     category: post.category || 'Uncategorized',
+                     tags: post.tags || [],
+                     status: post.status || 'PUBLISHED',
+                     featured: post.featured || false,
+                     publishedAt: post.publishedAt ? new Date(post.publishedAt) : null,
+                 },
+                 create: {
+                     title: post.title,
+                     slug: post.slug,
+                     content: post.content,
+                     excerpt: post.excerpt,
+                     coverImage: post.coverImage,
+                     category: post.category || 'Uncategorized',
+                     tags: post.tags || [],
+                     status: post.status || 'PUBLISHED',
+                     featured: post.featured || false,
+                     views: post.views || 0,
+                     authorId: dummyAdmin.id,
+                     publishedAt: post.publishedAt ? new Date(post.publishedAt) : null,
+                 }
+             });
+             count++;
         }
         console.log(`✅ Seeded ${count} Blog Posts.`);
     }
