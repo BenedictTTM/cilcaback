@@ -328,6 +328,10 @@ export class OrderService {
       select: { email: true, firstName: true }
     }).then(user => {
       if (user && user.email) {
+        const frontendBase = process.env.FRONTEND_URL || 'https://www.cilcahair.com';
+        const normalizedBase = frontendBase.endsWith('/') ? frontendBase.slice(0, -1) : frontendBase;
+        const trackingUrl = `${normalizedBase}/orders`;
+
         const items = updated.items ? updated.items.map((item: any) => ({
           name: item.productName || (item.product ? item.product.title : 'Product'),
           quantity: item.quantity,
@@ -343,6 +347,7 @@ export class OrderService {
             status: updated.status,
             total: updated.totalAmount ? `GHS ${Number(updated.totalAmount).toFixed(2)}` : 'GHS 0.00',
             items: items,
+            trackingUrl,
           }
         }).catch(err => console.error('Failed to send OrderStatusUpdate email', err));
       }

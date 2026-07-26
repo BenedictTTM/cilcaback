@@ -34,7 +34,6 @@
     "@prisma/client": "^6.15.0",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.6",
-    "@types/nodemailer": "^7.0.2",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -48,7 +47,6 @@
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.2",
     "meilisearch": "^0.53.0",
-    "nodemailer": "^7.0.10",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
@@ -56,6 +54,7 @@
     "react-dom": "^19.2.5",
     "redis": "^5.9.0",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.18.0",
     "rxjs": "^7.8.1"
   },
   "devDependencies": {

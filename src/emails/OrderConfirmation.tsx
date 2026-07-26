@@ -16,8 +16,8 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderId, n
       <Body style={main}>
         <Container style={container}>
           <Section style={brandHeader}>
-            <Text style={logoText}>🐼 abyList</Text>
-            <Text style={logoSubtitle}>BABY LIST SHOP</Text>
+            <Text style={logoText}>Cilca Hair</Text>
+            <Text style={logoSubtitle}>CILCA HAIR SHOP</Text>
           </Section>
           <Section style={content}>
             <Text style={h1}>Order Confirmed!</Text>
@@ -57,7 +57,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderId, n
             </Text>
           </Section>
           <Section style={footer}>
-            <Text style={footerText}>© {new Date().getFullYear()} abyList. All rights reserved.</Text>
+            <Text style={footerText}>© {new Date().getFullYear()} Cilca Hair. All rights reserved.</Text>
           </Section>
         </Container>
       </Body>

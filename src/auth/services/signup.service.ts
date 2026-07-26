@@ -57,7 +57,7 @@ export class SignupService {
 
       const frontendBase = process.env.FRONTEND_URL || 'http://localhost:3000';
       const normalizedBase = frontendBase.endsWith('/') ? frontendBase.slice(0, -1) : frontendBase;
-      const verifyUrl = `${normalizedBase}/verify-email`;
+      const verifyUrl = `${normalizedBase}/verify-email?token=${tokens.access_token}`;
 
       this.mailService.sendMail({
         to: user.email,

@@ -1,21 +1,23 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './src/app.module';
-import { NodemailerProvider } from './src/services/mail/providers/nodemailer.provider';
+import { MailService } from './src/services/mail/mail.service';
 
 async function bootstrap() {
   console.log('Bootstrapping application context...');
   const app = await NestFactory.createApplicationContext(AppModule);
   
-  // Get our nodemailer provider
-  const mailProvider = app.get(NodemailerProvider);
+  const mailService = app.get(MailService);
   
-  console.log('Sending test email to palomakut1@gmail.com...');
+  console.log('Sending test email...');
   try {
-    await mailProvider.send(
-      'palomakut1@gmail.com',
-      'Test Email from Optimum',
-      '<h1>Hello!</h1><p>This is a test email to verify Nodemailer configuration. If you see this, emails are working correctly!</p>'
-    );
+    await mailService.sendMail({
+      to: 'palomakut1@gmail.com',
+      template: 'VerifyEmail',
+      data: {
+        name: 'Test User',
+        verifyUrl: 'https://www.cilcahair.com/verify-email?token=test',
+      },
+    });
     console.log('Email sending process completed without throwing errors.');
   } catch (err) {
     console.error('Error sending email:', err);

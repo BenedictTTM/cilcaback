@@ -7,9 +7,17 @@ interface OrderStatusUpdateProps {
   status: string;
   total?: string;
   items?: Array<{ name: string; quantity: number; price: string }>;
+  trackingUrl?: string;
 }
 
-export const OrderStatusUpdate: React.FC<OrderStatusUpdateProps> = ({ orderId, name, status, total, items = [] }) => {
+export const OrderStatusUpdate: React.FC<OrderStatusUpdateProps> = ({
+  orderId,
+  name,
+  status,
+  total,
+  items = [],
+  trackingUrl = 'https://www.cilcahair.com/orders',
+}) => {
   return (
     <Html>
       <Head />
@@ -17,8 +25,8 @@ export const OrderStatusUpdate: React.FC<OrderStatusUpdateProps> = ({ orderId, n
       <Body style={main}>
         <Container style={container}>
           <Section style={brandHeader}>
-            <Text style={logoText}>🐼 abyList</Text>
-            <Text style={logoSubtitle}>BABY LIST SHOP</Text>
+            <Text style={logoText}>Cilca Hair</Text>
+            <Text style={logoSubtitle}>CILCA HAIR SHOP</Text>
           </Section>
           <Section style={content}>
             <Text style={h1}>Order Status Update</Text>
@@ -32,7 +40,7 @@ export const OrderStatusUpdate: React.FC<OrderStatusUpdateProps> = ({ orderId, n
             </Section>
 
             <Section style={buttonContainer}>
-              <Button style={button} href={`https://optimum-babycare.vercel.app/auth/login?redirect=/orders`}>
+              <Button style={button} href={trackingUrl}>
                 Track Your Order
               </Button>
             </Section>
@@ -69,7 +77,7 @@ export const OrderStatusUpdate: React.FC<OrderStatusUpdateProps> = ({ orderId, n
             <Text style={footerText}>
               If you have any questions about this update, please don't hesitate to contact us.
             </Text>
-            <Text style={footerText}>© {new Date().getFullYear()} abyList. All rights reserved.</Text>
+            <Text style={footerText}>© {new Date().getFullYear()} Cilca Hair. All rights reserved.</Text>
           </Section>
         </Container>
       </Body>
