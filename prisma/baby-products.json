@@ -1,0 +1,156 @@
+[
+    {
+        "title": "Gentle Baby Care Essentials Set",
+        "category_name": "Baby Care",
+        "details": "A premium collection of baby care essentials including gentle body wash, moisturizing lotion, and nourishing baby oil. Formulated with natural ingredients, free from parabens, sulfates, and artificial fragrances. Dermatologist tested and hypoallergenic — safe for your baby's delicate skin from day one.",
+        "price_obj": {
+            "value": 85
+        },
+        "images": [
+            {
+                "url": "https://images.unsplash.com/photo-1716625300692-8d5f0341b1c5?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8YmFieSUyMGNhcmUlMjBwcm9kdWN0cyUyMHdoaXRlJTIwYmFja2dyb3VuZHxlbnwwfDF8MHx8fDA%3D"
+            }
+        ],
+        "stock": 25
+    },
+    {
+        "title": "Premium Leather High-Top Sneakers",
+        "category_name": "Footwear",
+        "details": "Crafted from genuine full-grain leather, these high-top sneakers combine street style with premium comfort. Featuring cushioned insoles, reinforced stitching, and a durable rubber outsole. Perfect for everyday wear — they break in quickly and only get better with age.",
+        "price_obj": {
+            "value": 220
+        },
+        "images": [
+            {
+                "url": "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519"
+            }
+        ],
+        "stock": 15
+    },
+    {
+        "title": "Organic Baby Skincare Bundle",
+        "category_name": "Baby Care",
+        "details": "A curated set of organic baby skincare products featuring a gentle cleanser, soothing diaper cream, and a lightweight daily moisturizer. Made with certified organic shea butter, chamomile extract, and calendula oil. 100% natural, cruelty-free, and pediatrician recommended for newborns and toddlers.",
+        "price_obj": {
+            "value": 95
+        },
+        "images": [
+            {
+                "url": "https://images.unsplash.com/photo-1584515933487-779824d29309"
+            }
+        ],
+        "stock": 30
+    },
+    {
+        "title": "Baby Gentle Wash & Shampoo 2-in-1",
+        "category_name": "Baby Care",
+        "details": "Ultra-mild 2-in-1 baby wash and shampoo that gently cleanses without stripping natural oils. Enriched with aloe vera and vitamin E, it leaves skin soft and hair silky smooth. Tear-free formula, pH balanced, and suitable for daily use from birth. 500ml pump bottle for easy one-handed dispensing.",
+        "price_obj": {
+            "value": 45
+        },
+        "images": [
+            {
+                "url": "https://images.unsplash.com/photo-1611078489935-0cb964de46d6"
+            }
+        ],
+        "stock": 40
+    },
+    {
+        "title": "Natural Baby Lotion — Lavender & Chamomile",
+        "category_name": "Baby Care",
+        "details": "A nourishing daily baby lotion infused with calming lavender and chamomile extracts. Deeply hydrates sensitive skin and helps soothe your little one before bedtime. Free from dyes, phthalates, and synthetic fragrances. Dermatologically tested and approved for babies 0+ months. 250ml bottle.",
+        "price_obj": {
+            "value": 38
+        },
+        "images": [
+            {
+                "url": "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1"
+            }
+        ],
+        "stock": 35
+    },
+    {
+        "title": "Baby Bath Time Essentials Kit",
+        "category_name": "Baby Care",
+        "details": "Everything you need for a gentle and fun bath time experience. This kit includes a soft baby washcloth, natural sponge, tear-free bubble bath, and a gentle after-bath moisturizer. All products are plant-based, hypoallergenic, and designed for the most sensitive newborn skin.",
+        "price_obj": {
+            "value": 65
+        },
+        "images": [
+            {
+                "url": "https://images.unsplash.com/photo-1609220136736-443140cffec6"
+            }
+        ],
+        "stock": 20
+    },
+    {
+        "title": "Organic Coconut Baby Oil",
+        "category_name": "Baby Care",
+        "details": "Pure cold-pressed organic coconut baby oil for daily massage and skin hydration. Rich in lauric acid and vitamin E, it absorbs quickly and provides long-lasting moisture. Ideal for infant massage, cradle cap treatment, and protecting delicate skin. 200ml glass bottle with dropper.",
+        "price_obj": {
+            "value": 42
+        },
+        "images": [
+            {
+                "url": "https://images.unsplash.com/photo-1583947582886-f40ec95dd752"
+            }
+        ],
+        "stock": 30
+    },
+    {
+        "title": "Sensitive Baby Diaper Rash Cream",
+        "category_name": "Baby Care",
+        "details": "Fast-acting zinc oxide diaper rash cream that creates a protective barrier against wetness and irritation. Enriched with shea butter and beeswax for extra soothing relief. Fragrance-free and preservative-free — designed for babies with eczema-prone or ultra-sensitive skin. 100g tube.",
+        "price_obj": {
+            "value": 32
+        },
+        "images": [
+            {
+                "url": "https://images.unsplash.com/photo-1611078489951-0f89d90c3c2c"
+            }
+        ],
+        "stock": 50
+    },
+    {
+        "title": "Baby Sunscreen SPF 50+ — Mineral Formula",
+        "category_name": "Baby Care",
+        "details": "Broad-spectrum mineral sunscreen specifically formulated for babies and toddlers. Uses zinc oxide and titanium dioxide for safe, chemical-free sun protection. Water-resistant for up to 80 minutes, non-greasy, and easy to apply. Fragrance-free and reef-safe. 75ml travel-friendly tube.",
+        "price_obj": {
+            "value": 55
+        },
+        "images": [
+            {
+                "url": "https://images.unsplash.com/photo-1583947215259-38e31be8751f"
+            }
+        ],
+        "stock": 25
+    },
+    {
+        "title": "Baby Powder — Pure Cornstarch Formula",
+        "category_name": "Baby Care",
+        "details": "Talc-free baby powder made with 100% pure cornstarch. Keeps baby's skin dry, fresh, and comfortable throughout the day. Infused with a subtle hint of vanilla and oat extract for gentle soothing. Clinically tested for sensitive skin. 300g shaker bottle.",
+        "price_obj": {
+            "value": 28
+        },
+        "images": [
+            {
+                "url": "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e"
+            }
+        ],
+        "stock": 45
+    },
+    {
+        "title": "Complete Newborn Care Gift Set",
+        "category_name": "Baby Care",
+        "details": "The ultimate newborn gift set featuring a curated selection of premium baby care products: gentle body wash, daily lotion, diaper cream, baby oil, and a soft muslin washcloth — all beautifully packaged in a reusable keepsake box. Every product is plant-based, pediatrician approved, and free from harsh chemicals. The perfect gift for new parents.",
+        "price_obj": {
+            "value": 120
+        },
+        "images": [
+            {
+                "url": "https://images.unsplash.com/photo-1609220136890-7c57f7f0e0e3"
+            }
+        ],
+        "stock": 15
+    }
+]
