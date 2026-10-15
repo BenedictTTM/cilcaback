@@ -21,6 +21,29 @@ export class CrudService {
     private cloudinaryService: CloudinaryService,
   ) { }
 
+  /**
+   * Automatically purge the frontend's Redis cache for products.
+   * Runs asynchronously in the background so it doesn't slow down the response.
+   */
+  private purgeFrontendProductCache() {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    fetch(`${frontendUrl}/api/products/cache`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000),
+    })
+      .then(async (res) => {
+        if (res.ok) {
+          this.logger.log('🧹 [Cache] Frontend Redis product cache purged');
+        } else {
+          this.logger.warn(`⚠️ [Cache] Frontend cache purge responded with status ${res.status}`);
+        }
+      })
+      .catch((err) => {
+        this.logger.warn(`⚠️ [Cache] Failed to contact frontend to purge cache: ${err.message}`);
+      });
+  }
+
   async uploadImageToCloudinary(file: Express.Multer.File) {
     return await this.cloudinaryService.uploadImage(file).catch(() => {
       throw new BadRequestException('Invalid file type.');
@@ -97,6 +120,9 @@ export class CrudService {
       const duration = Date.now() - startTime;
       this.logger.log(`✅ Product created | ID:${newProduct.id} | ${duration}ms`);
 
+      // Invalidate frontend Redis cache
+      this.purgeFrontendProductCache();
+
       return { success: true, data: newProduct };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -130,6 +156,9 @@ export class CrudService {
 
       const duration = Date.now() - startTime;
       this.logger.log(`✅ Product updated | ID:${productId} | ${duration}ms`);
+
+      // Invalidate frontend Redis cache
+      this.purgeFrontendProductCache();
 
       return { success: true, data: updated };
     } catch (error) {
@@ -183,6 +212,9 @@ export class CrudService {
         },
       });
 
+      // Invalidate frontend Redis cache
+      this.purgeFrontendProductCache();
+
       return {
         success: true,
         data: archived,
@@ -198,6 +230,9 @@ export class CrudService {
 
       const duration = Date.now() - startTime;
       this.logger.log(`✅ Product deleted | ID:${productId} | ${duration}ms`);
+
+      // Invalidate frontend Redis cache
+      this.purgeFrontendProductCache();
 
       return { success: true, data: deleted };
     } catch (error) {
@@ -269,6 +304,11 @@ export class CrudService {
 
       const duration = Date.now() - startTime;
       this.logger.log(`✅ Import completed | Imported: ${importedCount} | Skipped: ${skippedCount} | ${duration}ms`);
+
+      // Invalidate frontend Redis cache
+      if (importedCount > 0) {
+        this.purgeFrontendProductCache();
+      }
 
       return {
         success: true,
